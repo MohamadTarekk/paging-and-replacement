@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#define SIZE = 999999999
 
 /// Global Variables
 int FRAMES_COUNT;
@@ -8,21 +8,21 @@ char POLICY[8]; //O P T I M A L \0
 LinkedList* LIST:
 
 /// Functions Prototypes
-readFile();
+void mainmenu();
+void readFile();
 
 int main()
 {
-    char s[8];
-
-    printf("Hello world!\n");
+    mainmenu();
     return 0;
 }
 
-/// IndexedList Implementation
+/// Double LinkedList Implementation
 typedef struct Node
 {
     int value;
     Node *next;
+    Node *previous;
 } Node;
 
 typedef struct LinkedList
@@ -58,6 +58,7 @@ Node* addNode(LinkedList *linkedList, int value)
     else
     {
         Node *last = findEnd(linkedList);
+        (*node).previous = last;
         (*last).next = node;
     }
     (*linkedList).size++;
@@ -70,34 +71,20 @@ int deleteNode(LinkedList *linkedList, int value)
 {
     if((*linkedList).empty)
         return 0;
-    Node *node = (*linkedList).root;
-    if((*node).value == value)
-    {
-        Node *temp = node;
-        node = (*node).next;
-        free(temp);
-        return 1;
-    }
-    Node *prev = node;
-    node = (*node).next;
-    while(1)
-    {
-        if(node == NULL)
-            return 0;
-        if((*node).value == value)
-        {
-            Node *temp = node;
-            node = (*node).next;
-            (*prev).next = node;
-            free(temp);
-            return 1;
-        }
-        else
-        {
-            prev = node;
-            node = (*node).next;
-        }
-    }
+    Node *node = findNode(linkedList, value);
+    if(node == NULL)
+        return 0;
+    Node *prev = (*node).previous;
+    Node *next = (*node).next;
+    if(prev != NULL)
+        (*prev).next = next;
+    if(next != NULL)
+        (*next).previous = prev;
+    free(node);
+    (*linkedList).size--;
+    if((*linkedList).size == 0)
+        (*linkedList).empty = 1;
+    return 1;
 }
 
 Node* findEnd(LinkedList *linkedList)
@@ -117,7 +104,7 @@ Node* findNode(LinkedList *linkedList, int value)
     Node *temp = (*linkedList).root;
     while(1)
     {
-        if(*temp == NULL)
+        if(temp == NULL)
             return NULL;
         if((*temp).value == value)
             return temp;
@@ -130,5 +117,6 @@ Node* getNewNode(int value)
     Node *node = (Node*) malloc(sizeof(Node));
     (*node).value = value;
     (*node).next = NULL;
+    (*node).previous = NULL;
     return node;
 }
