@@ -1,28 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define SIZE = 999999999
+#define SIZE 9999999
 
-/// Global Variables
-int FRAMES_COUNT;
-char POLICY[8]; //O P T I M A L \0
-LinkedList* LIST:
-
-/// Functions Prototypes
-void mainmenu();
-void readFile();
-
-int main()
-{
-    mainmenu();
-    return 0;
-}
-
-/// Double LinkedList Implementation
+/// Structs
 typedef struct Node
 {
     int value;
-    Node *next;
-    Node *previous;
+    struct Node *next;
+    struct Node *previous;
 } Node;
 
 typedef struct LinkedList
@@ -34,6 +19,92 @@ typedef struct LinkedList
     int full;
 } LinkedList;
 
+/// Global Variables
+int FRAMES_COUNT;
+char *POLICY; //O P T I M A L \0
+LinkedList LIST;
+
+/// Functions Prototypes
+void mainmenu();
+void readInput();
+
+/// Helping Functions
+void strRead(char *buf, int length);
+void strPrint(char *buf);
+
+/// Double LinkedList Implementation
+void initializeLinkedList(LinkedList *linkedList, int capacity);
+Node* addNode(LinkedList *linkedList, int value);
+int deleteNode(LinkedList *linkedList, int value);
+Node* findEnd(LinkedList *linkedList);
+Node* findNode(LinkedList *linkedList, int value);
+Node* getNewNode(int value);
+void printList(LinkedList *linkedList);
+
+int main()
+{
+    mainmenu();
+    return 0;
+}
+
+/// Functions
+void mainmenu()
+{
+    initializeLinkedList(&LIST, SIZE);
+    readInput();
+    //printList(LIST);
+    return;
+}
+
+void readInput()
+{
+    scanf("%d", &FRAMES_COUNT);
+    POLICY = (char*) malloc(8 * sizeof(char));
+    strRead(POLICY, 8);
+    strPrint(POLICY);
+    int buffer;
+    scanf("%d", &buffer);
+    while(buffer != -1)
+    {
+        addNode(&LIST, buffer);
+    //    printList(&LIST);
+        scanf("%d", &buffer);
+    }
+    //printList(&LIST);
+    return;
+}
+
+/// Helping Functions
+void strRead(char *buf, int length)
+{
+    // Flush the stdin manually
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+    // read the string
+    fgets(buf, length, stdin);
+    // Remove extra trailing spaces and newlines
+    int i = 0;
+    while(buf[i] != '\0') i++;
+    while(buf[i-1] == '\n' || buf[i-1] == ' ')
+    {
+        buf[i-1] = '\0';
+        i--;
+    }
+}
+
+void strPrint(char *buf)
+{
+    int i=0;
+    while(buf[i])
+    {
+        printf("%c", buf[i]);
+        i++;
+    }
+    printf("\n");
+    return;
+}
+
+/// Double LinkedList Implementation
 void initializeLinkedList(LinkedList *linkedList, int capacity)
 {
     linkedList = (LinkedList*) malloc(sizeof(LinkedList));
@@ -48,9 +119,11 @@ void initializeLinkedList(LinkedList *linkedList, int capacity)
 Node* addNode(LinkedList *linkedList, int value)
 {
     if((*linkedList).full == 1)
+    {
         return NULL;
+    }
     Node *node = getNewNode(value);
-    if((*linkedList).empty)
+    if((*linkedList).empty == 1)
     {
         (*linkedList).root = node;
         (*linkedList).empty = 0;
@@ -58,8 +131,15 @@ Node* addNode(LinkedList *linkedList, int value)
     else
     {
         Node *last = findEnd(linkedList);
-        (*node).previous = last;
-        (*last).next = node;
+        if(last == NULL)
+        {
+            (*linkedList).root = node;
+        }
+        else
+        {
+            (*node).previous = last;
+            (*last).next = node;
+        }
     }
     (*linkedList).size++;
     if((*linkedList).size == (*linkedList).capacity)
@@ -100,7 +180,7 @@ Node* findEnd(LinkedList *linkedList)
 Node* findNode(LinkedList *linkedList, int value)
 {
     if((*linkedList).empty == 1)
-        return NULL:
+        return NULL;
     Node *temp = (*linkedList).root;
     while(1)
     {
@@ -119,4 +199,16 @@ Node* getNewNode(int value)
     (*node).next = NULL;
     (*node).previous = NULL;
     return node;
+}
+
+void printList(LinkedList *linkedList)
+{
+    Node *temp = (*linkedList).root;
+    while(temp != NULL)
+    {
+        printf("%d\t", (*temp).value);
+        temp = (*temp).next;
+    }
+    printf("\n");
+    return;
 }
