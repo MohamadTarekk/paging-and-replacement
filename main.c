@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define SIZE 9999999
 
 /// Structs
@@ -22,22 +23,26 @@ typedef struct LinkedList
 /// Global Variables
 int FRAMES_COUNT;
 char *POLICY; //O P T I M A L \0
-LinkedList LIST;
+LinkedList *LIST;
 
 /// Functions Prototypes
 void mainmenu();
 void readInput();
+void startPaging();
+void FIFO();
 
 /// Helping Functions
 void strRead(char *buf, int length);
 void strPrint(char *buf);
 
 /// Double LinkedList Implementation
-void initializeLinkedList(LinkedList *linkedList, int capacity);
+LinkedList* initializeLinkedList(int capacity);
 Node* addNode(LinkedList *linkedList, int value);
 int deleteNode(LinkedList *linkedList, int value);
+int removeNode(LinkedList *linkedList, Node *node);
 Node* findEnd(LinkedList *linkedList);
 Node* findNode(LinkedList *linkedList, int value);
+void replaceNode(LinkedList *linkedList, Node *oldNode, Node *newNode);
 Node* getNewNode(int value);
 void printList(LinkedList *linkedList);
 
@@ -50,9 +55,9 @@ int main()
 /// Functions
 void mainmenu()
 {
-    initializeLinkedList(&LIST, SIZE);
+    LIST = initializeLinkedList(SIZE);
     readInput();
-    //printList(LIST);
+    startPaging();
     return;
 }
 
@@ -61,16 +66,90 @@ void readInput()
     scanf("%d", &FRAMES_COUNT);
     POLICY = (char*) malloc(8 * sizeof(char));
     strRead(POLICY, 8);
-    strPrint(POLICY);
     int buffer;
     scanf("%d", &buffer);
     while(buffer != -1)
     {
-        addNode(&LIST, buffer);
-    //    printList(&LIST);
+        addNode(LIST, buffer);
         scanf("%d", &buffer);
     }
-    //printList(&LIST);
+    return;
+}
+
+void startPaging()
+{
+    if(!strcmp(POLICY, "FIFO"))
+        FIFO();
+    else if(!strcmp(POLICY, "LRU"))
+    {}
+    else if(!strcmp(POLICY, "CLOCK"))
+    {}
+    else if(!strcmp(POLICY, "OPTIMAL"))
+    {}
+    else
+        printf("Unsupported Algorithm!");
+
+    return;
+}
+
+void FIFO()
+{
+    // initialize frames list
+    printf("Replacement Policy = FIFO\n-------------------------------------\nPage   Content of Frames\n----   -----------------\n");
+    LinkedList *frames;
+    frames = initializeLinkedList(FRAMES_COUNT);
+    // add first page request
+    Node *request = (*LIST).root;
+    addNode(frames, (*request).value);
+    // print page
+    char page[10];
+    sprintf(page, "%02d", (*request).value);
+    printf("%s     ", page);
+    printList(frames);
+    // initialize oldest
+    Node *oldest = (*frames).root;
+    request = (*request).next;
+    // receive page requests
+    int faults = 0;
+    while(request != NULL)
+    {
+        if((*frames).full == 1)
+        {
+            Node *node = findNode(frames, (*request).value);
+            if(node == NULL)
+            {
+                (*oldest).value = (*request).value;
+                if((*oldest).next == NULL)
+                {
+                    oldest = (*frames).root;
+                }
+                else
+                {
+                    oldest = (*oldest).next;
+                }
+                sprintf(page, "%02d F   ", (*request).value);
+                faults++;
+            }
+            else
+            {
+                sprintf(page, "%02d     ", (*request).value);
+            }
+        }
+        else
+        {
+            Node *node = findNode(frames, (*request).value);
+            if(node == NULL)
+            {
+                addNode(frames, (*request).value);
+            }
+            sprintf(page, "%02d     ", (*request).value);
+        }
+        printf("%s", page);
+        printList(frames);
+        request = (*request).next;
+    }
+    printf("-------------------------------------\n");
+    printf("Number of page faults = %d\n", faults);
     return;
 }
 
@@ -105,15 +184,15 @@ void strPrint(char *buf)
 }
 
 /// Double LinkedList Implementation
-void initializeLinkedList(LinkedList *linkedList, int capacity)
+LinkedList* initializeLinkedList(int capacity)
 {
-    linkedList = (LinkedList*) malloc(sizeof(LinkedList));
+    LinkedList *linkedList = (LinkedList*) malloc(sizeof(LinkedList));
     (*linkedList).root = NULL;
     (*linkedList).capacity = capacity;
     (*linkedList).size = 0;
     (*linkedList).empty = 1;
     (*linkedList).full = 0;
-    return;
+    return linkedList;
 }
 
 Node* addNode(LinkedList *linkedList, int value)
@@ -152,6 +231,11 @@ int deleteNode(LinkedList *linkedList, int value)
     if((*linkedList).empty)
         return 0;
     Node *node = findNode(linkedList, value);
+    return removeNode(linkedList, node);
+}
+
+int removeNode(LinkedList *linkedList, Node *node)
+{
     if(node == NULL)
         return 0;
     Node *prev = (*node).previous;
@@ -192,6 +276,20 @@ Node* findNode(LinkedList *linkedList, int value)
     }
 }
 
+void replaceNode(LinkedList *linkedList, Node *oldNode, Node *newNode)
+{
+    // link node with previous
+    Node *prev = (*oldNode).previous;
+    (*prev).next = newNode;
+    (*newNode).previous = prev;
+    // link node with next
+    Node *next = (*oldNode).next;
+    (*next).previous = newNode;
+    (*newNode).next = next;
+    // delete old node
+    free(oldNode);
+}
+
 Node* getNewNode(int value)
 {
     Node *node = (Node*) malloc(sizeof(Node));
@@ -206,7 +304,7 @@ void printList(LinkedList *linkedList)
     Node *temp = (*linkedList).root;
     while(temp != NULL)
     {
-        printf("%d\t", (*temp).value);
+        printf("%02d ", (*temp).value);
         temp = (*temp).next;
     }
     printf("\n");
