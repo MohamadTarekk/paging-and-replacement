@@ -31,6 +31,7 @@ void readInput();
 void startPaging();
 void FIFO();
 void LRU();
+void OPTIMAL();
 
 /// Helping Functions
 void strRead(char *buf, int length);
@@ -86,7 +87,7 @@ void startPaging()
     else if(!strcmp(POLICY, "CLOCK"))
     {}
     else if(!strcmp(POLICY, "OPTIMAL"))
-    {}
+        OPTIMAL();
     else
         printf("Unsupported Algorithm!");
 
@@ -188,8 +189,9 @@ void LRU()
                     }
                     node = node->previous;
                 }
-                int target = node->next->value;
+                int target = findEnd(lru)->value;
                 findNode(frames, target)->value = request->value;
+                free(lru);
                 sprintf(page, "%02d F   ", request->value);
                 faults++;
             }
@@ -211,8 +213,84 @@ void LRU()
         printList(frames);
         request = request->next;
     }
+    printf("-------------------------------------\n");
+    printf("Number of page faults = %d\n", faults);
+    return;
+}
 
-
+void OPTIMAL()
+{
+    // initialize frames and lru
+    printf("Replacement Policy = OPTIMAL\n-------------------------------------\nPage   Content of Frames\n----   -----------------\n");
+    LinkedList *frames = initializeLinkedList(FRAMES_COUNT);
+    // add first page request
+    Node *request = LIST->root;
+    addNode(frames, request->value);
+    // print page
+    char page[10];
+    sprintf(page, "%02d", request->value);
+    printf("%s     ", page);
+    printList(frames);
+    request = request->next;
+    // receive page requests
+    int faults = 0;
+    while(request != NULL)
+    {
+        if(frames->full == 1)
+        {
+            Node *node = findNode(frames, request->value);
+            if(node == NULL)
+            {
+                LinkedList *upcoming = initializeLinkedList(FRAMES_COUNT);
+                Node *node = request->next;
+                while(upcoming->full == 0 && (node != NULL))
+                {
+                    if((findNode(frames, node->value) != NULL) && (findNode(upcoming, node->value) == NULL))
+                    {
+                        addNode(upcoming, node->value);
+                    }
+                    node = node->next;
+                }
+                if(frames->size != upcoming->size)
+                {
+                    Node *a = frames->root;
+                    Node *b = upcoming->root;
+                    while(b != NULL)
+                    {
+                        if(a->value != b->value)
+                            break;
+                        a = a->next;
+                        b = b->next;
+                    }
+                    a->value = request->value;
+                }
+                else
+                {
+                    int target = findEnd(upcoming)->value;
+                    findNode(frames, target)->value = request->value;
+                }
+                free(upcoming);
+                sprintf(page, "%02d F   ", request->value);
+                faults++;
+            }
+            else
+            {
+                sprintf(page, "%02d     ", request->value);
+            }
+        }
+        else
+        {
+            Node *node = findNode(frames, request->value);
+            if(node == NULL)
+            {
+                addNode(frames, request->value);
+            }
+            sprintf(page, "%02d     ", request->value);
+        }
+        printf("%s", page);
+        printList(frames);
+        request = request->next;
+    }
     printf("-------------------------------------\n");
     printf("Number of page faults = %d\n", faults);
     return;
