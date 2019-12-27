@@ -30,6 +30,7 @@ void mainmenu();
 void readInput();
 void startPaging();
 void FIFO();
+void LRU();
 
 /// Helping Functions
 void strRead(char *buf, int length);
@@ -81,7 +82,7 @@ void startPaging()
     if(!strcmp(POLICY, "FIFO"))
         FIFO();
     else if(!strcmp(POLICY, "LRU"))
-    {}
+        LRU();
     else if(!strcmp(POLICY, "CLOCK"))
     {}
     else if(!strcmp(POLICY, "OPTIMAL"))
@@ -96,8 +97,7 @@ void FIFO()
 {
     // initialize frames list
     printf("Replacement Policy = FIFO\n-------------------------------------\nPage   Content of Frames\n----   -----------------\n");
-    LinkedList *frames;
-    frames = initializeLinkedList(FRAMES_COUNT);
+    LinkedList *frames = initializeLinkedList(FRAMES_COUNT);
     // add first page request
     Node *request = (*LIST).root;
     addNode(frames, (*request).value);
@@ -148,6 +148,71 @@ void FIFO()
         printList(frames);
         request = (*request).next;
     }
+    printf("-------------------------------------\n");
+    printf("Number of page faults = %d\n", faults);
+    return;
+}
+
+void LRU()
+{
+    // initialize frames and lru
+    printf("Replacement Policy = LRU\n-------------------------------------\nPage   Content of Frames\n----   -----------------\n");
+    LinkedList *frames = initializeLinkedList(FRAMES_COUNT);
+    // add first page request
+    Node *request = LIST->root;
+    addNode(frames, request->value);
+    // print page
+    char page[10];
+    sprintf(page, "%02d", request->value);
+    printf("%s     ", page);
+    printList(frames);
+    request = request->next;
+    // receive page requests
+    int faults = 0;
+    while(request != NULL)
+    {
+        if(frames->full == 1)
+        {
+            Node *node = findNode(frames, request->value);
+            if(node == NULL)
+            {
+                LinkedList *lru = initializeLinkedList(FRAMES_COUNT);
+                Node *node = request->previous;
+                addNode(lru, node->value);
+                node = node->previous;
+                while(lru->full == 0 && (node != NULL))
+                {
+                    if(findNode(lru, node->value) == NULL)
+                    {
+                        addNode(lru, node->value);
+                    }
+                    node = node->previous;
+                }
+                int target = node->next->value;
+                findNode(frames, target)->value = request->value;
+                sprintf(page, "%02d F   ", request->value);
+                faults++;
+            }
+            else
+            {
+                sprintf(page, "%02d     ", request->value);
+            }
+        }
+        else
+        {
+            Node *node = findNode(frames, request->value);
+            if(node == NULL)
+            {
+                addNode(frames, request->value);
+            }
+            sprintf(page, "%02d     ", request->value);
+        }
+        printf("%s", page);
+        printList(frames);
+        request = request->next;
+    }
+
+
     printf("-------------------------------------\n");
     printf("Number of page faults = %d\n", faults);
     return;
