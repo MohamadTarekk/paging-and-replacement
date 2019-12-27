@@ -102,54 +102,54 @@ void FIFO()
     printf("Replacement Policy = FIFO\n-------------------------------------\nPage   Content of Frames\n----   -----------------\n");
     LinkedList *frames = initializeLinkedList(FRAMES_COUNT);
     // add first page request
-    Node *request = (*LIST).root;
-    addNode(frames, (*request).value);
+    Node *request = LIST->root;
+    addNode(frames, request->value);
     // print page
     char page[10];
-    sprintf(page, "%02d", (*request).value);
+    sprintf(page, "%02d", request->value);
     printf("%s     ", page);
     printList(frames);
     // initialize oldest
-    Node *oldest = (*frames).root;
-    request = (*request).next;
+    Node *oldest = frames->root;
+    request = request->next;
     // receive page requests
     int faults = 0;
     while(request != NULL)
     {
-        if((*frames).full == 1)
+        if(frames->full == 1)
         {
-            Node *node = findNode(frames, (*request).value);
+            Node *node = findNode(frames, request->value);
             if(node == NULL)
             {
-                (*oldest).value = (*request).value;
-                if((*oldest).next == NULL)
+                oldest->value = request->value;
+                if(oldest->next == NULL)
                 {
-                    oldest = (*frames).root;
+                    oldest = frames->root;
                 }
                 else
                 {
-                    oldest = (*oldest).next;
+                    oldest = oldest->next;
                 }
-                sprintf(page, "%02d F   ", (*request).value);
+                sprintf(page, "%02d F   ", request->value);
                 faults++;
             }
             else
             {
-                sprintf(page, "%02d     ", (*request).value);
+                sprintf(page, "%02d     ", request->value);
             }
         }
         else
         {
-            Node *node = findNode(frames, (*request).value);
+            Node *node = findNode(frames, request->value);
             if(node == NULL)
             {
-                addNode(frames, (*request).value);
+                addNode(frames, request->value);
             }
-            sprintf(page, "%02d     ", (*request).value);
+            sprintf(page, "%02d     ", request->value);
         }
         printf("%s", page);
         printList(frames);
-        request = (*request).next;
+        request = request->next;
     }
     printf("-------------------------------------\n");
     printf("Number of page faults = %d\n", faults);
@@ -410,48 +410,48 @@ void strPrint(char *buf)
 LinkedList* initializeLinkedList(int capacity)
 {
     LinkedList *linkedList = (LinkedList*) malloc(sizeof(LinkedList));
-    (*linkedList).root = NULL;
-    (*linkedList).capacity = capacity;
-    (*linkedList).size = 0;
-    (*linkedList).empty = 1;
-    (*linkedList).full = 0;
+    linkedList->root = NULL;
+    linkedList->capacity = capacity;
+    linkedList->size = 0;
+    linkedList->empty = 1;
+    linkedList->full = 0;
     return linkedList;
 }
 
 Node* addNode(LinkedList *linkedList, int value)
 {
-    if((*linkedList).full == 1)
+    if(linkedList->full == 1)
     {
         return NULL;
     }
     Node *node = getNewNode(value);
-    if((*linkedList).empty == 1)
+    if(linkedList->empty == 1)
     {
-        (*linkedList).root = node;
-        (*linkedList).empty = 0;
+        linkedList->root = node;
+        linkedList->empty = 0;
     }
     else
     {
         Node *last = findEnd(linkedList);
         if(last == NULL)
         {
-            (*linkedList).root = node;
+            linkedList->root = node;
         }
         else
         {
-            (*node).previous = last;
-            (*last).next = node;
+            node->previous = last;
+            last->next = node;
         }
     }
-    (*linkedList).size++;
-    if((*linkedList).size == (*linkedList).capacity)
-        (*linkedList).full = 1;
+    linkedList->size++;
+    if(linkedList->size == linkedList->capacity)
+        linkedList->full = 1;
     return node;
 }
 
 int deleteNode(LinkedList *linkedList, int value)
 {
-    if((*linkedList).empty)
+    if(linkedList->empty)
         return 0;
     Node *node = findNode(linkedList, value);
     return removeNode(linkedList, node);
@@ -461,28 +461,28 @@ int removeNode(LinkedList *linkedList, Node *node)
 {
     if(node == NULL)
         return 0;
-    Node *prev = (*node).previous;
-    Node *next = (*node).next;
+    Node *prev = node->previous;
+    Node *next = node->next;
     if(prev != NULL)
-        (*prev).next = next;
+        prev->next = next;
     if(next != NULL)
-        (*next).previous = prev;
+        next->previous = prev;
     free(node);
-    (*linkedList).size--;
-    if((*linkedList).size == 0)
-        (*linkedList).empty = 1;
+    linkedList->size--;
+    if(linkedList->size == 0)
+        linkedList->empty = 1;
     return 1;
 }
 
 Node* findEnd(LinkedList *linkedList)
 {
-    Node *temp = ((*linkedList).root);
+    Node *temp = linkedList->root;
     int index = 0;
     if(temp == NULL)
         return NULL;
-    while(((*temp).next != NULL) && (index < linkedList->size))
+    while((temp->next != NULL) && (index < linkedList->size))
     {
-        temp = (*temp).next;
+        temp = temp->next;
         index++;
     }
     return temp;
@@ -490,17 +490,17 @@ Node* findEnd(LinkedList *linkedList)
 
 Node* findNode(LinkedList *linkedList, int value)
 {
-    if((*linkedList).empty == 1)
+    if(linkedList->empty == 1)
         return NULL;
-    Node *temp = (*linkedList).root;
+    Node *temp = linkedList->root;
     int index = 0;
     while(index < linkedList->size)
     {
         if(temp == NULL)
             return NULL;
-        if((*temp).value == value)
+        if(temp->value == value)
             return temp;
-        temp = (*temp).next;
+        temp = temp->next;
         index++;
     }
     return NULL;
@@ -509,13 +509,13 @@ Node* findNode(LinkedList *linkedList, int value)
 void replaceNode(LinkedList *linkedList, Node *oldNode, Node *newNode)
 {
     // link node with previous
-    Node *prev = (*oldNode).previous;
-    (*prev).next = newNode;
-    (*newNode).previous = prev;
+    Node *prev = oldNode->previous;
+    prev->next = newNode;
+    newNode->previous = prev;
     // link node with next
-    Node *next = (*oldNode).next;
-    (*next).previous = newNode;
-    (*newNode).next = next;
+    Node *next = oldNode->next;
+    next->previous = newNode;
+    newNode->next = next;
     // delete old node
     free(oldNode);
     return;
@@ -524,22 +524,22 @@ void replaceNode(LinkedList *linkedList, Node *oldNode, Node *newNode)
 Node* getNewNode(int value)
 {
     Node *node = (Node*) malloc(sizeof(Node));
-    (*node).value = value;
-    (*node).use = 1;
-    (*node).next = NULL;
-    (*node).previous = NULL;
+    node->value = value;
+    node->use = 1;
+    node->next = NULL;
+    node->previous = NULL;
     return node;
 }
 
 void printList(LinkedList *linkedList)
 {
-    Node *temp = (*linkedList).root;
+    Node *temp = linkedList->root;
     int index = 0;
     while((temp != NULL) && (index < linkedList->size))
     {
         if(temp->use != -1)
-            printf("%02d ", (*temp).value);
-        temp = (*temp).next;
+            printf("%02d ", temp->value);
+        temp = temp->next;
         index++;
     }
     printf("\n");
