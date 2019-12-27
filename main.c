@@ -313,25 +313,34 @@ void OPTIMAL()
             if(node == NULL)
             {
                 LinkedList *upcoming = initializeLinkedList(FRAMES_COUNT);
-                Node *node = request->next;
-                while(upcoming->full == 0 && (node != NULL))
+                Node *next = request->next;
+                while(upcoming->full == 0 && (next != NULL))
                 {
-                    if((findNode(frames, node->value) != NULL) && (findNode(upcoming, node->value) == NULL))
+                    if((findNode(frames, next->value) != NULL) && (findNode(upcoming, next->value) == NULL))
                     {
-                        addNode(upcoming, node->value);
+                        addNode(upcoming, next->value);
                     }
-                    node = node->next;
+                    next = next->next;
                 }
                 if(frames->size != upcoming->size)
                 {
                     Node *a = frames->root;
-                    Node *b = upcoming->root;
-                    while(b != NULL)
+                    while(a != NULL)
                     {
-                        if(a->value != b->value)
+                        int found = 0;
+                        Node *b = upcoming->root;
+                        while(b != NULL)
+                        {
+                            if(a->value == b->value)
+                            {
+                                found = 1;
+                                break;
+                            }
+                            b = b->next;
+                        }
+                        if(!found)
                             break;
                         a = a->next;
-                        b = b->next;
                     }
                     a->value = request->value;
                 }
