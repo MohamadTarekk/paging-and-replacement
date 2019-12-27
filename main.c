@@ -7,6 +7,7 @@
 typedef struct Node
 {
     int value;
+    int use;
     struct Node *next;
     struct Node *previous;
 } Node;
@@ -31,6 +32,7 @@ void readInput();
 void startPaging();
 void FIFO();
 void LRU();
+void CLOCK();
 void OPTIMAL();
 
 /// Helping Functions
@@ -85,7 +87,7 @@ void startPaging()
     else if(!strcmp(POLICY, "LRU"))
         LRU();
     else if(!strcmp(POLICY, "CLOCK"))
-    {}
+        CLOCK();
     else if(!strcmp(POLICY, "OPTIMAL"))
         OPTIMAL();
     else
@@ -207,6 +209,75 @@ void LRU()
             {
                 addNode(frames, request->value);
             }
+            sprintf(page, "%02d     ", request->value);
+        }
+        printf("%s", page);
+        printList(frames);
+        request = request->next;
+    }
+    printf("-------------------------------------\n");
+    printf("Number of page faults = %d\n", faults);
+    return;
+}
+
+void CLOCK()
+{
+    // initialize frames and lru
+    printf("Replacement Policy = CLOCK\n-------------------------------------\nPage   Content of Frames\n----   -----------------\n");
+    LinkedList *frames = initializeLinkedList(FRAMES_COUNT);
+    Node *nil;
+    while(frames->full == 0)
+    {
+        nil = addNode(frames, 0);
+        nil->use = -1;  // mark as empty
+    }
+    // make the list circular
+    nil->next = frames->root;
+    frames->root->previous = nil;
+    // initialize clock pointer
+    Node *clockPtr = frames->root;
+    // add first page request
+    Node *request = LIST->root;
+    clockPtr->value = request->value;
+    clockPtr->use = 1;
+    clockPtr = clockPtr->next;
+    // print page
+    char page[10];
+    sprintf(page, "%02d", request->value);
+    printf("%s     ", page);
+    printList(frames);
+    request = request->next;
+    // receive page requests
+    int faults = 0;
+    while(request != NULL)
+    {
+        Node *target = findNode(frames, request->value);
+        if(target == NULL)
+        {
+            if(clockPtr->use == -1)
+            {
+                clockPtr->value = request->value;
+                clockPtr->use = 1;
+                clockPtr = clockPtr->next;
+                sprintf(page, "%02d     ", request->value);
+            }
+            else    // frames array is full
+            {
+                while((clockPtr->use != 0) && (clockPtr->value != request->value))
+                {
+                    clockPtr->use = 0;
+                    clockPtr = clockPtr->next;
+                }
+                clockPtr->value = request->value;
+                clockPtr->use = 1;
+                clockPtr = clockPtr->next;
+                sprintf(page, "%02d F   ", request->value);
+                faults++;
+            }
+        }
+        else
+        {
+            target->use = 1;
             sprintf(page, "%02d     ", request->value);
         }
         printf("%s", page);
@@ -397,10 +468,14 @@ int removeNode(LinkedList *linkedList, Node *node)
 Node* findEnd(LinkedList *linkedList)
 {
     Node *temp = ((*linkedList).root);
+    int index = 0;
     if(temp == NULL)
         return NULL;
-    while((*temp).next != NULL)
+    while(((*temp).next != NULL) && (index < linkedList->size))
+    {
         temp = (*temp).next;
+        index++;
+    }
     return temp;
 }
 
@@ -409,14 +484,17 @@ Node* findNode(LinkedList *linkedList, int value)
     if((*linkedList).empty == 1)
         return NULL;
     Node *temp = (*linkedList).root;
-    while(1)
+    int index = 0;
+    while(index < linkedList->size)
     {
         if(temp == NULL)
             return NULL;
         if((*temp).value == value)
             return temp;
         temp = (*temp).next;
+        index++;
     }
+    return NULL;
 }
 
 void replaceNode(LinkedList *linkedList, Node *oldNode, Node *newNode)
@@ -431,12 +509,14 @@ void replaceNode(LinkedList *linkedList, Node *oldNode, Node *newNode)
     (*newNode).next = next;
     // delete old node
     free(oldNode);
+    return;
 }
 
 Node* getNewNode(int value)
 {
     Node *node = (Node*) malloc(sizeof(Node));
     (*node).value = value;
+    (*node).use = 1;
     (*node).next = NULL;
     (*node).previous = NULL;
     return node;
@@ -445,10 +525,13 @@ Node* getNewNode(int value)
 void printList(LinkedList *linkedList)
 {
     Node *temp = (*linkedList).root;
-    while(temp != NULL)
+    int index = 0;
+    while((temp != NULL) && (index < linkedList->size))
     {
-        printf("%02d ", (*temp).value);
+        if(temp->use != -1)
+            printf("%02d ", (*temp).value);
         temp = (*temp).next;
+        index++;
     }
     printf("\n");
     return;
